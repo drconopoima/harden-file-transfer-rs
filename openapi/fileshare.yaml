@@ -1,0 +1,144 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: File Share Service
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:8000/v1
+paths:
+  /files:
+    get:
+      summary: List all files
+      operationId: listFiles
+      tags:
+        - files
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          schema:
+            type: integer
+            format: int8
+      responses:
+        "200":
+          description: A paged array of files
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Files"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /file:
+    post:
+      summary: Create a file
+      operationId: createFile
+      tags:
+        - files
+      responses:
+        "200":
+          description: Successful file creation request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+              examples:
+                v1:
+                  value:
+                    {
+                      "Status": "PENDING",
+                      "StartTime": "2022-06-19T10:52:00Z",
+                      "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
+                      "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
+                      "Tags": [],
+                    }
+        "201":
+          description: Null response
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /files/{fileId}:
+    get:
+      summary: Retrieve specific file information
+      operationId: getFileById
+      tags:
+        - files
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: The id of the file to retrieve
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+              examples:
+                v1:
+                  value:
+                    {
+                      "Status": "AVAILABLE",
+                      "StartTime": "2022-06-19T10:52:00Z",
+                      "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
+                      "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
+                      "Tags": [],
+                    }
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    File:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          format: int128
+        status:
+          type: string
+        start_time:
+          type: string
+        owner_id:
+          type: integer
+          format: int128
+        tags:
+          type: array
+          items:
+            type: "string"
+    Files:
+      type: array
+      items:
+        $ref: "#/components/schemas/File"
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
