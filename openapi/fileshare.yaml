@@ -20,7 +20,7 @@ paths:
           required: false
           schema:
             type: integer
-            format: int8
+            format: int32
       responses:
         "200":
           description: A paged array of files
@@ -39,15 +39,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-  /file:
     post:
-      summary: Create a file
+      summary: Create a file object metadata
       operationId: createFile
       tags:
         - files
       responses:
         "200":
-          description: Successful file creation request
+          description: Successful file object metadata creation request
           content:
             application/json:
               schema:
@@ -56,7 +55,7 @@ paths:
                 v1:
                   value:
                     {
-                      "Status": "PENDING",
+                      "Status": "CREATING",
                       "StartTime": "2022-06-19T10:52:00Z",
                       "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
                       "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
@@ -72,7 +71,7 @@ paths:
                 $ref: "#/components/schemas/Error"
   /files/{fileId}:
     get:
-      summary: Retrieve specific file information
+      summary: Retrieve specific file object metadata properties
       operationId: getFileById
       tags:
         - files
@@ -80,7 +79,7 @@ paths:
         - name: fileId
           in: path
           required: true
-          description: The id of the file to retrieve
+          description: The id of the file object to retrieve
           schema:
             type: string
       responses:
@@ -95,7 +94,7 @@ paths:
                   value:
                     {
                       "Status": "AVAILABLE",
-                      "StartTime": "2022-06-19T10:52:00Z",
+                      "CreationTime": "2022-06-19T10:52:00Z",
                       "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
                       "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
                       "Tags": [],
@@ -106,6 +105,89 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    delete:
+      summary: Delete a file object content and metadata properties
+      operationId: deleteFileById
+      tags:
+        - files
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: The id of the file object to delete
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+              examples:
+                v1:
+                  value:
+                    {
+                      "Status": "DELETING",
+                      "DeletionTime": "2022-06-19T10:52:00Z",
+                      "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
+                      "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
+                      "Tags": [],
+                    }
+  /files/{fileId}/upload:
+    post:
+      summary: Upload a file
+      operationId: uploadFile
+      tags:
+        - files
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: The id of the file to upload
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful file upload request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+              examples:
+                v1:
+                  value:
+                    {
+                      "Status": "SYNCING",
+                      "UploadTime": "2022-06-19T10:52:00Z",
+                      "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
+                      "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
+                      "Tags": [],
+                    }
+        "201":
+          description: Null response
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /files/{fileId}/download:
+    get:
+      summary: Download a file
+      operationId: downloadFileById
+      tags:
+        - files
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: The id of the file to download
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Expected response to a valid request
 components:
   schemas:
     File:
@@ -114,19 +196,26 @@ components:
         - id
       properties:
         id:
-          type: integer
-          format: int128
+          type: string
+          format: uuid
         status:
           type: string
-        start_time:
+        creation_time:
           type: string
+          format: date-time
+        upload_time:
+          type: string
+          format: date-time
+        deletion_time:
+          type: string
+          format: date-time
         owner_id:
-          type: integer
-          format: int128
+          type: string
+          format: uuid
         tags:
           type: array
           items:
-            type: "string"
+            type: string
     Files:
       type: array
       items:
