@@ -49,6 +49,10 @@ paths:
       requestBody:
         description: File Object Information
         required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/File"
       responses:
         "200":
           description: Successful file object metadata creation request
@@ -289,7 +293,7 @@ paths:
                       "ExpirationTime": "2022-06-19T10:52:00Z",
                       "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
                       "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
-                      "ShareURL": "https://localhost:8000/v1/files/aafb42c4-a344-45af-9701-c745d3a2b3c5/download"
+                      "ShareURL": "https://localhost:8000/v1/files/aafb42c4-a344-45af-9701-c745d3a2b3c5/download",
                       "Tags": [],
                     }
         "401":
