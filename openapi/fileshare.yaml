@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   version: 1.0.0
-  title: File Share Service
+  title: File Sharing API Service
   license:
     name: MIT
 servers:
@@ -33,6 +33,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Files"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
         default:
           description: Unexpected error
           content:
@@ -44,6 +46,9 @@ paths:
       operationId: createFile
       tags:
         - files
+      requestBody:
+        description: File Object Information
+        required: true
       responses:
         "200":
           description: Successful file object metadata creation request
@@ -55,14 +60,16 @@ paths:
                 v1:
                   value:
                     {
-                      "Status": "CREATING",
-                      "StartTime": "2022-06-19T10:52:00Z",
+                      "Status": "creating",
+                      "CreationTime": "2022-06-19T10:52:00Z",
                       "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
                       "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
                       "Tags": [],
                     }
         "201":
           description: Null response
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
         default:
           description: Unexpected error
           content:
@@ -82,9 +89,10 @@ paths:
           description: The id of the file object to retrieve
           schema:
             type: string
+            format: uuid
       responses:
         "200":
-          description: Expected response to a valid request
+          description: Describe file success response to a valid request
           content:
             application/json:
               schema:
@@ -93,12 +101,14 @@ paths:
                 v1:
                   value:
                     {
-                      "Status": "AVAILABLE",
+                      "Status": "available",
                       "CreationTime": "2022-06-19T10:52:00Z",
                       "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
                       "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
                       "Tags": [],
                     }
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
         default:
           description: Unexpected error
           content:
@@ -117,9 +127,10 @@ paths:
           description: The id of the file object to delete
           schema:
             type: string
+            format: uuid
       responses:
         "200":
-          description: Expected response to a valid request
+          description: Delete file success response to a valid request
           content:
             application/json:
               schema:
@@ -128,12 +139,14 @@ paths:
                 v1:
                   value:
                     {
-                      "Status": "DELETING",
+                      "Status": "deleting",
                       "DeletionTime": "2022-06-19T10:52:00Z",
                       "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
                       "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
                       "Tags": [],
                     }
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
   /files/{fileId}/upload:
     post:
       summary: Upload a file
@@ -147,6 +160,7 @@ paths:
           description: The id of the file to upload
           schema:
             type: string
+            format: uuid
       responses:
         "200":
           description: Successful file upload request
@@ -158,7 +172,7 @@ paths:
                 v1:
                   value:
                     {
-                      "Status": "SYNCING",
+                      "Status": "updating",
                       "UploadTime": "2022-06-19T10:52:00Z",
                       "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
                       "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
@@ -166,6 +180,8 @@ paths:
                     }
         "201":
           description: Null response
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
         default:
           description: Unexpected error
           content:
@@ -175,7 +191,7 @@ paths:
   /files/{fileId}/download:
     get:
       summary: Download a file
-      operationId: downloadFileById
+      operationId: downloadFile
       tags:
         - files
       parameters:
@@ -185,34 +201,157 @@ paths:
           description: The id of the file to download
           schema:
             type: string
+            format: uuid
+        - name: token
+          in: query
+          schema:
+            type: string
+            description: Token String to determine the authorization needed for file
       responses:
         "200":
-          description: Expected response to a valid request
+          description: Download file success response to a valid request
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /files/{fileId}/recover:
+    post:
+      summary: Recovers a deleted file object content and metadata properties
+      operationId: recoverFile
+      tags:
+        - files
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: The id of the file object to recover
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successful recover deleted file request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+              examples:
+                v1:
+                  value:
+                    {
+                      "Status": "recovering",
+                      "RecoverTime": "2022-06-19T10:52:00Z",
+                      "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
+                      "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
+                      "Tags": [],
+                    }
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /files/{fileId}/share:
+    get:
+      summary: Generate a shareable URL for a file object
+      operationId: createShareURL
+      tags:
+        - files
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          description: The id of the file to retrieve
+          schema:
+            type: string
+            format: uuid
+        - name: expires
+          in: query
+          schema:
+            type: string
+            format: date-time
+            description: Expiration date and time for file sharing URL
+      responses:
+        "200":
+          description: Successful generate shareable URL request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+              examples:
+                v1:
+                  value:
+                    {
+                      "Status": "available",
+                      "ExpirationTime": "2022-06-19T10:52:00Z",
+                      "FileId": "aafb42c4-a344-45af-9701-c745d3a2b3c5",
+                      "OwnerId": "7bba4642-bf32-48b8-a41b-28a3750c1c3b",
+                      "ShareURL": "https://localhost:8000/v1/files/aafb42c4-a344-45af-9701-c745d3a2b3c5/download"
+                      "Tags": [],
+                    }
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid
+      headers:
+        WWW_Authenticate:
+          schema:
+            type: string
   schemas:
     File:
       type: object
       required:
-        - id
+        - FileId
       properties:
-        id:
+        FileId:
           type: string
           format: uuid
-        status:
+        Status:
           type: string
-        creation_time:
+          enum:
+            [
+              "available",
+              "creating",
+              "deleted",
+              "deleting",
+              "error",
+              "errorDeleting",
+              "recovering",
+              "updating",
+            ]
+        CreationTime:
           type: string
           format: date-time
-        upload_time:
+        UploadTime:
           type: string
           format: date-time
-        deletion_time:
+        DeletionTime:
           type: string
           format: date-time
-        owner_id:
+        RecoverTime:
+          type: string
+          format: date-time
+        ExpirationTime:
+          type: string
+          format: date-time
+        OwnerId:
           type: string
           format: uuid
-        tags:
+        ShareURL:
+          type: string
+          format: uri
+        Tags:
           type: array
           items:
             type: string
@@ -224,10 +363,33 @@ components:
       type: object
       required:
         - code
+        - error_code
         - message
       properties:
         code:
           type: integer
           format: int32
+        error_code:
+          type: string
+          enum:
+            [
+              "authorization_error",
+              "external_service_timeout",
+              "insufficient_access",
+              "insufficient_scope",
+              "invalid_json_input",
+              "invalid_parameters",
+              "invalid_request",
+              "invalid_response",
+              "invalid_token",
+              "io_error",
+              "method_not_allowed",
+              "not_found",
+              "resource_already_exists",
+              "resource_not_found",
+              "resource_temporarily_unavailable",
+              "unauthorized",
+              "unexpected_error",
+            ]
         message:
           type: string
